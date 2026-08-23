@@ -1,21 +1,44 @@
 import pytesseract
 from pdf2image import convert_from_bytes, convert_from_path
+from pypdf import PdfReader
+import io
 
 from parser import parse_resume
 from jd_processor import process_job_description
 from ranker import rank_candidates
 
 
+MIN_TEXT_LENGTH = 50  # below this, treat the PDF as image-only and fall back to OCR
 
-def extract_text_from_pdf(uploaded_file):
- 
+
+def _get_pdf_bytes(uploaded_file):
+    if isinstance(uploaded_file, str):
+        with open(uploaded_file, "rb") as f:
+            return f.read()
+    return uploaded_file.getvalue() if hasattr(uploaded_file, "getvalue") else uploaded_file.read()
+
+
+def extract_text_direct(pdf_bytes):
+    """Fast path: read the PDF's existing text layer. No image conversion, no OCR."""
     try:
-        # Check if input is a file path (str) or a Streamlit uploaded file object
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+        text = ""
+        for page in reader.pages:
+            page_text = page.extract_text() or ""
+            text += page_text + "\n"
+        return text.strip()
+    except Exception:
+        return ""
+
+
+def extract_text_ocr(uploaded_file):
+    """Slow path: rasterize pages and run tesseract. Only used when there's no text layer."""
+    try:
         if isinstance(uploaded_file, str):
-            images = convert_from_path(uploaded_file, dpi=300)
+            images = convert_from_path(uploaded_file, dpi=200)
         else:
             file_bytes = uploaded_file.getvalue() if hasattr(uploaded_file, "getvalue") else uploaded_file.read()
-            images = convert_from_bytes(file_bytes, dpi=300)
+            images = convert_from_bytes(file_bytes, dpi=200)
 
         ocr_text = ""
         for image in images:
@@ -26,11 +49,22 @@ def extract_text_from_pdf(uploaded_file):
 
         if ocr_text:
             return ocr_text, "OCR"
-            
+
     except Exception as e:
         raise RuntimeError(f"OCR text extraction failed: {e}")
 
     raise RuntimeError("No readable text could be extracted from the PDF using OCR.")
+
+
+def extract_text_from_pdf(uploaded_file):
+    pdf_bytes = _get_pdf_bytes(uploaded_file)
+
+    direct_text = extract_text_direct(pdf_bytes)
+    if len(direct_text) >= MIN_TEXT_LENGTH:
+        return direct_text, "text"
+
+    # No usable text layer (likely a scanned resume) — fall back to OCR
+    return extract_text_ocr(io.BytesIO(pdf_bytes))
 
 
 
