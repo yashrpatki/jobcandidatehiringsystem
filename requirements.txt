@@ -1,0 +1,16 @@
+Flask==3.1.2
+gunicorn==23.0.0
+
+spacy==3.8.7
+scikit-learn==1.7.2
+duckdb==1.4.1
+flashtext==2.7
+
+pdf2image==1.17.0
+pytesseract==0.3.13
+Pillow==11.3.0
+
+numpy==2.3.3
+scipy==1.16.2
+joblib==1.5.2
+threadpoolctl==3.6.0
