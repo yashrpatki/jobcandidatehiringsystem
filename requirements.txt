@@ -4,6 +4,7 @@ gunicorn==23.0.0
 spacy==3.8.7
 scikit-learn==1.7.2
 duckdb==1.4.1
+psycopg2-binary==2.9.10
 flashtext==2.7
 
 pdf2image==1.17.0
