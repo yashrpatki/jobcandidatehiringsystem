@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Screening History - Screening Desk{% endblock %}
+{% block content %}
+<div style="margin-bottom: 16px;">
+  <button onclick="window.history.back()" class="btn btn-secondary" style="display:inline-flex; align-items:center; gap:6px; padding: 6px 12px; font-size:13px; font-weight:600; cursor:pointer;">
+    <i data-lucide="arrow-left" style="width:16px; height:16px;"></i> Back
+  </button>
+</div>
+<h1 class="page-title">Screening Runs History</h1>
+
+<div class="panel">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Role Title</th>
+        <th>Total Candidates</th>
+        <th>Avg Score</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in runs %}
+      <tr>
+        <td>{{ r.created_at }}</td>
+        <td><strong>{{ r.role }}</strong></td>
+        <td>{{ r.total_candidates }}</td>
+        <td><span class="score-badge">{{ r.avg_score }}</span></td>
+        <td style="display:flex; gap:8px;">
+          <a href="{{ url_for('results', run_id=r.run_id) }}" class="btn btn-secondary" style="padding:4px 8px; font-size:12px;">View Results</a>
+          <form action="{{ url_for('delete_history', run_id=r.run_id) }}" method="POST" onsubmit="return confirm('Delete run record?');">
+            <button type="submit" class="btn btn-secondary" style="padding:4px 8px; font-size:12px; color:var(--accent-red);">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

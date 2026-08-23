@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Intake Desk - Screening Desk{% endblock %}
+
+{% block content %}
+<div class="panel-header" style="margin-bottom: 24px;">
+  <h1 class="page-title">Candidate Intake Desk</h1>
+  <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">
+    Upload candidate PDF resumes and define role specifications to trigger AI screening.
+  </p>
+</div>
+
+<form action="{{ url_for('process') }}" method="POST" enctype="multipart/form-data" id="intakeForm">
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+    
+    <!-- Left Column: Role & Requirements -->
+    <div class="panel" style="display: flex; flex-direction: column; gap: 16px;">
+      <h3 style="font-size: 16px; font-weight: 700; margin: 0;">1. Target Job Criteria</h3>
+      
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Role Title</label>
+        <input type="text" name="role" class="input-control" placeholder="e.g. Senior Full Stack Engineer" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Job Description & Requirements</label>
+        <textarea name="job_description" rows="8" class="input-control" placeholder="Paste key responsibilities, required skills, and qualification criteria..." required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); resize: vertical;"></textarea>
+      </div>
+    </div>
+
+    <!-- Right Column: Resume Attachments & Live List -->
+    <div class="panel" style="display: flex; flex-direction: column; gap: 16px;">
+      <h3 style="font-size: 16px; font-weight: 700; margin: 0;">2. Attach Resumes (PDF Only)</h3>
+
+      <div style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 24px; text-align: center; background: #fafafa; position: relative;">
+        <i data-lucide="upload-cloud" style="width: 40px; height: 40px; color: var(--accent-indigo); margin-bottom: 8px;"></i>
+        <p style="margin: 0; font-weight: 600; font-size: 14px;">Drag & Drop candidate PDFs here</p>
+        <p style="margin: 4px 0 12px 0; color: var(--text-muted); font-size: 12px;">Or click below to browse files (Up to 50MB)</p>
+        
+        <input type="file" name="resumes" id="resumeInput" multiple accept=".pdf" required style="position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;">
+        
+        <button type="button" class="btn btn-secondary" style="pointer-events: none;">Select PDF Files</button>
+      </div>
+
+      <!-- Uploaded Files Preview List Container -->
+      <div id="fileListContainer" style="display: none; margin-top: 8px;">
+        <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">Selected Files (<span id="fileCount">0</span>)</div>
+        <div id="fileList" style="display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; padding-right: 4px;"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Form Actions & Progress State Container -->
+  <div class="panel" style="display: flex; flex-direction: column; gap: 16px;">
+    
+    <!-- Submit Button Row -->
+    <div id="actionRow" style="display: flex; justify-content: flex-end;">
+      <button type="submit" id="submitBtn" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; font-size: 15px; font-weight: 600;">
+        <i data-lucide="cpu"></i> Process & Rank Candidates
+      </button>
+    </div>
+
+    <!-- Processing Loader & Progress Indicator (Hidden by default) -->
+    <div id="progressSection" style="display: none; padding: 12px 0;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 14px; font-weight: 600; color: var(--accent-indigo); display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="loader" class="spin-icon" style="width: 18px; height: 18px;"></i> Parsing resumes and generating ranking scores...
+        </span>
+        <span id="progressPercent" style="font-size: 14px; font-weight: 700;">10%</span>
+      </div>
+
+      <!-- Dynamic Bar Tracker -->
+      <div style="width: 100%; height: 10px; background: #e2e8f0; border-radius: 6px; overflow: hidden;">
+        <div id="animatedBar" style="width: 10%; height: 100%; background: linear-gradient(90deg, #6366f1, #a855f7); transition: width 0.4s ease;"></div>
+      </div>
+    </div>
+
+  </div>
+</form>
+
+<style>
+  .spin-icon { animation: spin 1.2s linear infinite; }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+</style>
+
+<script>
+  const fileInput = document.getElementById('resumeInput');
+  const fileListContainer = document.getElementById('fileListContainer');
+  const fileList = document.getElementById('fileList');
+  const fileCount = document.getElementById('fileCount');
+  const intakeForm = document.getElementById('intakeForm');
+  const actionRow = document.getElementById('actionRow');
+  const progressSection = document.getElementById('progressSection');
+  const animatedBar = document.getElementById('animatedBar');
+  const progressPercent = document.getElementById('progressPercent');
+
+  // Render Selected Files Badges
+  fileInput.addEventListener('change', (e) => {
+    fileList.innerHTML = '';
+    const files = e.target.files;
+
+    if (files.length > 0) {
+      fileListContainer.style.display = 'block';
+      fileCount.innerText = files.length;
+
+      Array.from(files).forEach((file, index) => {
+        const item = document.createElement('div');
+        item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 12px; font-size: 13px;';
+        
+        item.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
+            <i data-lucide="file-text" style="width: 16px; height: 16px; color: var(--accent-indigo); flex-shrink: 0;"></i>
+            <span style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${file.name}</span>
+          </div>
+          <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">(${(file.size / (1024 * 1024)).toFixed(2)} MB)</span>
+        `;
+        fileList.appendChild(item);
+      });
+
+      lucide.createIcons();
+    } else {
+      fileListContainer.style.display = 'none';
+    }
+  });
+
+  // Display Animated Processing Bar on Submit
+  intakeForm.addEventListener('submit', () => {
+    actionRow.style.display = 'none';
+    progressSection.style.display = 'block';
+
+    let currentWidth = 10;
+    const interval = setInterval(() => {
+      if (currentWidth < 90) {
+        currentWidth += Math.floor(Math.random() * 8) + 3;
+        if (currentWidth > 90) currentWidth = 90;
+        animatedBar.style.width = currentWidth + '%';
+        progressPercent.innerText = currentWidth + '%';
+      } else {
+        clearInterval(interval);
+      }
+    }, 450);
+  });
+</script>
+{% endblock %}

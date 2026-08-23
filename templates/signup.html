@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ 'HR' if role == 'hr' else 'Candidate' }} Sign Up - Screening Desk</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    body { display: flex; align-items: center; justify-content: center; overflow-y: auto; }
+    .auth-card { width: 400px; max-width: 92vw; margin: 24px 0; }
+    .auth-icon {
+      width: 48px; height: 48px; border-radius: 12px; margin: 0 auto 14px;
+      display: flex; align-items: center; justify-content: center; color: white;
+      background: {{ 'var(--accent-indigo)' if role == 'hr' else '#10b981' }};
+    }
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+    .field input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-color); font-family: inherit; font-size: 14px; }
+    .field input:focus { outline: none; border-color: var(--accent-indigo); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+  </style>
+</head>
+<body>
+  <div class="panel auth-card">
+    <div style="text-align:center; margin-bottom: 22px;">
+      <div class="auth-icon"><i data-lucide="{{ 'briefcase' if role == 'hr' else 'file-check' }}"></i></div>
+      <h2 style="font-size: 20px; font-weight: 700;">{{ 'Create HR Account' if role == 'hr' else 'Create Candidate Account' }}</h2>
+      <p style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">
+        {{ 'Screen and rank candidates for your open roles' if role == 'hr' else 'Get a professional ATS report on your resume' }}
+      </p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}" style="margin-bottom: 16px;">
+            <i data-lucide="info" style="width:18px; height:18px;"></i>
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+      <div class="field">
+        <label>Full Name</label>
+        <input type="text" name="name" required autofocus>
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" name="email" required>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" name="password" required minlength="6">
+      </div>
+      <div class="field">
+        <label>Confirm Password</label>
+        <input type="password" name="confirm_password" required minlength="6">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:11px;">
+        Create Account
+      </button>
+    </form>
+
+    <p style="text-align:center; margin-top:18px; font-size:13px; color: var(--text-muted);">
+      Already have an account?
+      <a href="{{ url_for('login_hr' if role == 'hr' else 'login_candidate') }}" style="color: var(--accent-indigo); font-weight:600; text-decoration:none;">Log in</a>
+    </p>
+    <p style="text-align:center; margin-top:8px; font-size:13px;">
+      <a href="{{ url_for('landing') }}" style="color: var(--text-muted); text-decoration:none;">&larr; Back</a>
+    </p>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

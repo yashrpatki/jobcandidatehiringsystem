@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Screening Desk{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <!-- Put this inside <head> -->
+<style>
+  /* Top NProgress / Loading Bar */
+  #progress-bar-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: transparent;
+    z-index: 9999;
+  }
+  #progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.7);
+    transition: width 0.3s ease, opacity 0.4s ease;
+  }
+</style>
+
+<!-- Add right under <body> -->
+<div id="progress-bar-container">
+  <div id="progress-bar"></div>
+</div>
+
+<script>
+  // Animated Global Progress Bar
+  window.addEventListener('beforeunload', () => {
+    const pb = document.getElementById('progress-bar');
+    pb.style.width = '30%';
+    setTimeout(() => { pb.style.width = '70%'; }, 150);
+  });
+  window.addEventListener('load', () => {
+    const pb = document.getElementById('progress-bar');
+    pb.style.width = '100%';
+    setTimeout(() => { pb.style.opacity = '0'; }, 400);
+  });
+</script>
+</head>
+<body>
+  <div class="app-container" id="appContainer">
+    <!-- Dark Collapsible Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-logo"><i data-lucide="layers"></i></div>
+        <div class="brand-title">Screening Desk</div>
+        <button type="button" class="sidebar-toggle-btn" id="sidebarToggle" title="Collapse Sidebar">
+          <i data-lucide="panel-left-close" id="toggleIcon"></i>
+        </button>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="{{ url_for('index') }}" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}" title="Intake Desk">
+          <i data-lucide="layout-dashboard"></i> <span class="nav-text">Intake Desk</span>
+        </a>
+        <a href="{{ url_for('history') }}" class="nav-item {% if active_page == 'history' or active_page == 'results' %}active{% endif %}" title="Screening Runs">
+          <i data-lucide="users"></i> <span class="nav-text">Screening Runs</span>
+        </a>
+        <a href="{{ url_for('analytics') }}" class="nav-item {% if active_page == 'analytics' %}active{% endif %}" title="Global Analytics">
+          <i data-lucide="bar-chart-3"></i> <span class="nav-text">Global Analytics</span>
+        </a>
+        <a href="{{ url_for('candidates') }}" class="nav-item {% if active_page == 'candidates' %}active{% endif %}" title="Candidates Directory">
+          <i data-lucide="user-check"></i> <span class="nav-text">Candidates</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content Wrapper -->
+    <div class="main-wrapper">
+      <header class="top-header">
+        <form class="search-box" action="{{ url_for('candidates') }}" method="GET">
+          <i data-lucide="search" style="width:16px; height:16px; color:var(--text-muted);"></i>
+          <input type="text" name="q" value="{{ request.args.get('q', '') }}" placeholder="Search candidates, skills, or roles...">
+        </form>
+        <div class="header-actions">
+          <div class="user-profile">
+            <div class="avatar">{{ (session.get('name') or 'HR')[:2].upper() }}</div>
+            <span style="font-size: 14px; font-weight: 600;">{{ session.get('name') or 'Recruiter Admin' }}</span>
+          </div>
+          <a href="{{ url_for('logout') }}" class="btn btn-secondary" style="margin-left:16px; padding:8px 14px;" title="Log out">
+            <i data-lucide="log-out" style="width:16px; height:16px;"></i> Logout
+          </a>
+        </div>
+      </header>
+
+      <main class="content-area">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}">
+                <i data-lucide="info" style="width:18px; height:18px;"></i>
+                <span>{{ message }}</span>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    // Sidebar Collapse Logic
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('sidebarToggle');
+    
+    // Restore saved state
+    if (localStorage.getItem('sidebar-collapsed') === 'true') {
+      sidebar.classList.add('collapsed');
+    }
+
+    toggleBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+      const isCollapsed = sidebar.classList.contains('collapsed');
+      localStorage.setItem('sidebar-collapsed', isCollapsed);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Candidate Portal{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="app-container" id="appContainer">
+    <!-- Dark Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-logo"><i data-lucide="layers"></i></div>
+        <div class="brand-title">Screening Desk</div>
+        <button type="button" class="sidebar-toggle-btn" id="sidebarToggle" title="Collapse Sidebar">
+          <i data-lucide="panel-left-close" id="toggleIcon"></i>
+        </button>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="{{ url_for('candidate_dashboard') }}" class="nav-item {% if active_page == 'candidate_dashboard' %}active{% endif %}" title="My Resume">
+          <i data-lucide="file-check"></i> <span class="nav-text">My Resume</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content Wrapper -->
+    <div class="main-wrapper">
+      <header class="top-header">
+        <div class="search-box" style="visibility:hidden;">
+          <i data-lucide="search" style="width:16px; height:16px;"></i>
+          <input type="text" placeholder="">
+        </div>
+        <div class="header-actions">
+          <div class="user-profile">
+            <div class="avatar">{{ (session.get('name') or 'C')[:2].upper() }}</div>
+            <span style="font-size: 14px; font-weight: 600;">{{ session.get('name') or 'Candidate' }}</span>
+          </div>
+          <a href="{{ url_for('logout') }}" class="btn btn-secondary" style="margin-left:16px; padding:8px 14px;" title="Log out">
+            <i data-lucide="log-out" style="width:16px; height:16px;"></i> Logout
+          </a>
+        </div>
+      </header>
+
+      <main class="content-area">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}">
+                <i data-lucide="info" style="width:18px; height:18px;"></i>
+                <span>{{ message }}</span>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('sidebarToggle');
+
+    if (localStorage.getItem('sidebar-collapsed') === 'true') {
+      sidebar.classList.add('collapsed');
+    }
+
+    toggleBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+      const isCollapsed = sidebar.classList.contains('collapsed');
+      localStorage.setItem('sidebar-collapsed', isCollapsed);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% block title %}Applicant Analytics - Screening Desk{% endblock %}
+
+{% block content %}
+<!-- Back Button -->
+<div style="margin-bottom: 16px;">
+  <button onclick="window.history.back()" class="btn btn-secondary" style="display:inline-flex; align-items:center; gap:6px; padding: 6px 12px; font-size:13px; font-weight:600; cursor:pointer;">
+    <i data-lucide="arrow-left" style="width:16px; height:16px;"></i> Back
+  </button>
+</div>
+
+<div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+  <div>
+    <h1 class="page-title" style="margin:0;">Talent Analytics & Pipeline Intelligence</h1>
+    <p style="color:var(--text-muted); font-size:14px; margin-top:4px;">
+      In-depth workforce metrics, qualification breakdowns, and talent pool alignment.
+    </p>
+  </div>
+</div>
+
+<!-- ATS Executive Metrics Row -->
+<div class="metrics-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
+  <div class="metric-card">
+    <div class="metric-icon" style="background: #e0e7ff; color: var(--accent-indigo);">
+      <i data-lucide="users"></i>
+    </div>
+    <div>
+      <div class="metric-label">Total Applicants</div>
+      <div class="metric-value" id="statTotal">0</div>
+    </div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-icon" style="background: #ecfdf5; color: #10b981;">
+      <i data-lucide="user-check"></i>
+    </div>
+    <div>
+      <div class="metric-label">Interview Ready (>75%)</div>
+      <div class="metric-value" id="statQualified">0</div>
+    </div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-icon" style="background: #fef3c7; color: #d97706;">
+      <i data-lucide="briefcase"></i>
+    </div>
+    <div>
+      <div class="metric-label">Avg Experience</div>
+      <div class="metric-value" id="statAvgExp">0 Yrs</div>
+    </div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-icon" style="background: #f3e8ff; color: #a855f7;">
+      <i data-lucide="target"></i>
+    </div>
+    <div>
+      <div class="metric-label">Primary Skill Density</div>
+      <div class="metric-value" id="statTopSkill">N/A</div>
+    </div>
+  </div>
+</div>
+
+<!-- Primary Analytics Dashboard Grid -->
+<div class="analytics-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+  
+  <!-- Chart 1: Hiring Funnel / Candidate Recommendation -->
+  <div class="panel">
+    <h3 style="font-size:15px; font-weight:700; margin-bottom:16px;">Candidate Screening Funnel</h3>
+    <div style="height: 250px; position: relative;">
+      <canvas id="funnelChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 2: Skill Coverage & Market Gaps -->
+  <div class="panel">
+    <h3 style="font-size:15px; font-weight:700; margin-bottom:16px;">Skill Market Match vs. Gap Analysis</h3>
+    <div style="height: 250px; position: relative;">
+      <canvas id="skillsGapChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 3: Candidate Experience Tiering -->
+  <div class="panel">
+    <h3 style="font-size:15px; font-weight:700; margin-bottom:16px;">Seniority & Experience Distribution</h3>
+    <div style="height: 240px; position: relative;">
+      <canvas id="experienceChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 4: Fit Score Component Breakdown Radar -->
+  <div class="panel">
+    <h3 style="font-size:15px; font-weight:700; margin-bottom:16px;">Average Pool Alignment Score</h3>
+    <div style="height: 240px; display:flex; justify-content:center;">
+      <canvas id="poolRadarChart"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const analyticsData = {{ analytics | tojson }};
+
+  // Helper calculation values derived from candidate objects
+  const candidates = analyticsData.candidates || [];
+  const scores = analyticsData.scores || [];
+  
+  // Executive Metrics Calculations
+  const totalCandidates = scores.length;
+  const highFit = scores.filter(s => s >= 75).length;
+  const midFit = scores.filter(s => s >= 50 && s < 75).length;
+  const lowFit = scores.filter(s => s < 50).length;
+
+  document.getElementById('statTotal').innerText = totalCandidates;
+  document.getElementById('statQualified').innerText = `${highFit} (${totalCandidates ? Math.round((highFit/totalCandidates)*100) : 0}%)`;
+  
+  if (analyticsData.top_skills && analyticsData.top_skills.length > 0) {
+    document.getElementById('statTopSkill').innerText = analyticsData.top_skills[0][0];
+  }
+
+  // Calculate Average Experience from available candidate data
+  let totalExp = 0;
+  let expCount = 0;
+  candidates.forEach(c => {
+    let exp = parseFloat(c.experience_years);
+    if (!isNaN(exp)) { totalExp += exp; expCount++; }
+  });
+  document.getElementById('statAvgExp').innerText = expCount > 0 ? (totalExp / expCount).toFixed(1) + ' Yrs' : 'N/A';
+
+  // 1. Hiring Funnel / Recommendations Chart
+  new Chart(document.getElementById('funnelChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: ['Shortlisted (>75%)', 'Further Review (50-74%)', 'Rejected (<50%)'],
+      datasets: [{
+        label: 'Candidates',
+        data: [highFit, midFit, lowFit],
+        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+        borderRadius: 6
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true, grid: { color: '#f1f5f9' } }, y: { grid: { display: false } } }
+    }
+  });
+
+  // 2. Skill Match vs Gap Bar Chart
+  const topSkillsLabels = (analyticsData.top_skills || []).slice(0, 6).map(s => s[0]);
+  const topSkillsCounts = (analyticsData.top_skills || []).slice(0, 6).map(s => s[1]);
+  
+  new Chart(document.getElementById('skillsGapChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: topSkillsLabels.length > 0 ? topSkillsLabels : ['Skill A', 'Skill B', 'Skill C'],
+      datasets: [{
+        label: 'Candidate Match Density',
+        data: topSkillsCounts.length > 0 ? topSkillsCounts : [0, 0, 0],
+        backgroundColor: '#6366f1',
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
+    }
+  });
+
+  // 3. Seniority & Experience Tier Breakdown
+  let expTiers = [0, 0, 0, 0]; // 0-2 yrs, 3-5 yrs, 6-8 yrs, 9+ yrs
+  candidates.forEach(c => {
+    let exp = parseFloat(c.experience_years) || 0;
+    if (exp <= 2) expTiers[0]++;
+    else if (exp <= 5) expTiers[1]++;
+    else if (exp <= 8) expTiers[2]++;
+    else expTiers[3]++;
+  });
+
+  new Chart(document.getElementById('experienceChart').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: ['Entry (0-2 yrs)', 'Mid (3-5 yrs)', 'Senior (6-8 yrs)', 'Lead/Executive (9+ yrs)'],
+      datasets: [{
+        label: 'Candidate Count',
+        data: expTiers,
+        borderColor: '#a855f7',
+        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
+    }
+  });
+
+  // 4. Candidate Pool Alignment Breakdown (Radar Chart)
+  let avgSkills = 0, avgExp = 0, avgDegree = 0, avgRole = 0;
+  if (candidates.length > 0) {
+    candidates.forEach(c => {
+      if (c.score_breakdown) {
+        avgSkills += c.score_breakdown.skills || 0;
+        avgExp += c.score_breakdown.experience || 0;
+        avgDegree += c.score_breakdown.degree || 0;
+        avgRole += c.score_breakdown.role || 0;
+      }
+    });
+    avgSkills = Math.round(avgSkills / candidates.length);
+    avgExp = Math.round(avgExp / candidates.length);
+    avgDegree = Math.round(avgDegree / candidates.length);
+    avgRole = Math.round(avgRole / candidates.length);
+  }
+
+  new Chart(document.getElementById('poolRadarChart').getContext('2d'), {
+    type: 'radar',
+    data: {
+      labels: ['Skills Alignment', 'Exp Relevance', 'Degree Match', 'Role Similarity'],
+      datasets: [{
+        label: 'Pool Average %',
+        data: [avgSkills || 70, avgExp || 65, avgDegree || 80, avgRole || 75],
+        backgroundColor: 'rgba(99, 102, 241, 0.2)',
+        borderColor: '#6366f1',
+        pointBackgroundColor: '#6366f1'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { r: { min: 0, max: 100, ticks: { display: false } } },
+      plugins: { legend: { display: false } }
+    }
+  });
+</script>
+{% endblock %}

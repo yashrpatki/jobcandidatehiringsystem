@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Screening Desk</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    body { display: flex; align-items: center; justify-content: center; overflow-y: auto; }
+    .landing-wrap { max-width: 760px; width: 100%; padding: 24px; }
+    .landing-header { text-align: center; margin-bottom: 32px; }
+    .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .role-card { text-align: center; cursor: default; }
+    .role-icon {
+      width: 56px; height: 56px; border-radius: 14px; margin: 0 auto 16px;
+      display: flex; align-items: center; justify-content: center; color: white;
+    }
+    .role-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+    @media (max-width: 640px) { .role-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="landing-wrap">
+    <div class="landing-header">
+      <div class="brand-logo" style="margin: 0 auto 16px; width:48px; height:48px;"><i data-lucide="layers"></i></div>
+      <h1 style="font-size: 26px; font-weight: 700; letter-spacing: -0.02em;">Screening Desk</h1>
+      <p style="color: var(--text-muted); font-size: 14px; margin-top: 6px;">Choose how you'd like to continue</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}" style="margin-bottom: 16px;">
+            <i data-lucide="info" style="width:18px; height:18px;"></i>
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="role-grid">
+      <div class="panel role-card">
+        <div class="role-icon" style="background: var(--accent-indigo);">
+          <i data-lucide="briefcase"></i>
+        </div>
+        <h3 style="font-size: 17px; font-weight: 700;">I'm hiring (HR)</h3>
+        <p style="color: var(--text-muted); font-size: 13px; margin-top: 6px;">
+          Upload candidate resumes, rank applicants against a job description, and track screening runs.
+        </p>
+        <div class="role-actions">
+          <a href="{{ url_for('login_hr') }}" class="btn btn-primary" style="justify-content:center;">Log In</a>
+          <a href="{{ url_for('signup_hr') }}" class="btn btn-secondary" style="justify-content:center;">Sign Up</a>
+        </div>
+      </div>
+
+      <div class="panel role-card">
+        <div class="role-icon" style="background: #10b981;">
+          <i data-lucide="file-check"></i>
+        </div>
+        <h3 style="font-size: 17px; font-weight: 700;">I'm a candidate</h3>
+        <p style="color: var(--text-muted); font-size: 13px; margin-top: 6px;">
+          Upload your resume and get a professional ATS report with tips to improve it.
+        </p>
+        <div class="role-actions">
+          <a href="{{ url_for('login_candidate') }}" class="btn btn-primary" style="justify-content:center;">Log In</a>
+          <a href="{{ url_for('signup_candidate') }}" class="btn btn-secondary" style="justify-content:center;">Sign Up</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>lucide.createIcons();</script>
+</body>
+</html>

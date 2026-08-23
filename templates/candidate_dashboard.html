@@ -1,0 +1,79 @@
+{% extends "base_candidate.html" %}
+{% block title %}My Resume - Screening Desk{% endblock %}
+
+{% block content %}
+<div class="panel-header" style="margin-bottom: 24px;">
+  <h1 class="page-title">My Resume</h1>
+  <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">
+    Upload your resume to get a professional ATS (Applicant Tracking System) report with tips to improve it.
+  </p>
+</div>
+
+{% if report %}
+<div class="panel" style="display:flex; justify-content:space-between; align-items:center; gap:20px; flex-wrap:wrap;">
+  <div style="display:flex; align-items:center; gap:16px;">
+    <div style="width:56px; height:56px; border-radius:50%; background:#e0e7ff; color:var(--accent-indigo); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:18px; flex-shrink:0;">
+      {{ report.ats_score }}
+    </div>
+    <div>
+      <h3 style="font-size:16px; font-weight:700; margin:0;">{{ report.filename }}</h3>
+      <p style="color:var(--text-muted); font-size:13px; margin-top:4px;">Last analyzed on {{ report.created_at }}</p>
+    </div>
+  </div>
+  <a href="{{ url_for('candidate_report', report_id=report.report_id) }}" class="btn btn-primary">
+    <i data-lucide="file-text"></i> View Full Report
+  </a>
+</div>
+
+<div class="panel" style="margin-top:16px;">
+  <h3 style="font-size:15px; font-weight:700; margin-bottom:12px;">Upload a New Resume</h3>
+  <p style="color:var(--text-muted); font-size:13px; margin-bottom:16px;">
+    Uploading a new resume will replace your current report. You can only have one active resume on file.
+  </p>
+  <form action="{{ url_for('candidate_upload') }}" method="POST" enctype="multipart/form-data">
+    <div style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 24px; text-align: center; background: #fafafa; position: relative; margin-bottom:16px;">
+      <i data-lucide="upload-cloud" style="width: 36px; height: 36px; color: var(--accent-indigo); margin-bottom: 8px;"></i>
+      <p style="margin: 0; font-weight: 600; font-size: 14px;">Drag & Drop your PDF resume here</p>
+      <p style="margin: 4px 0 12px 0; color: var(--text-muted); font-size: 12px;">Or click below to browse (single PDF, up to 50MB)</p>
+      <input type="file" name="resume" id="resumeInput" accept=".pdf" required style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;">
+      <button type="button" class="btn btn-secondary" style="pointer-events:none;">Select PDF File</button>
+      <div id="fileNamePreview" style="margin-top:10px; font-size:13px; font-weight:600; color: var(--accent-indigo);"></div>
+    </div>
+    <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:11px;">
+      <i data-lucide="cpu"></i> Analyze Resume
+    </button>
+  </form>
+</div>
+
+{% else %}
+<div class="panel">
+  <div style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 32px; text-align: center; background: #fafafa; position: relative;">
+    <i data-lucide="upload-cloud" style="width: 44px; height: 44px; color: var(--accent-indigo); margin-bottom: 10px;"></i>
+    <p style="margin: 0; font-weight: 700; font-size: 16px;">Upload your resume to get started</p>
+    <p style="margin: 6px 0 16px 0; color: var(--text-muted); font-size: 13px;">
+      We'll scan it and generate a professional ATS report with a score and concrete tips to improve it.
+    </p>
+    <form action="{{ url_for('candidate_upload') }}" method="POST" enctype="multipart/form-data" style="max-width:420px; margin:0 auto;">
+      <div style="position:relative; margin-bottom:16px;">
+        <input type="file" name="resume" id="resumeInput" accept=".pdf" required style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;">
+        <button type="button" class="btn btn-secondary" style="pointer-events:none; width:100%; justify-content:center;">Select PDF File</button>
+      </div>
+      <div id="fileNamePreview" style="margin-bottom:14px; font-size:13px; font-weight:600; color: var(--accent-indigo);"></div>
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:11px;">
+        <i data-lucide="cpu"></i> Analyze Resume
+      </button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<script>
+  const input = document.getElementById('resumeInput');
+  const preview = document.getElementById('fileNamePreview');
+  if (input) {
+    input.addEventListener('change', () => {
+      preview.textContent = input.files.length ? input.files[0].name : '';
+    });
+  }
+</script>
+{% endblock %}

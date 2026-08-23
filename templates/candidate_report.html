@@ -1,0 +1,105 @@
+{% extends "base_candidate.html" %}
+{% block title %}Your ATS Report - Screening Desk{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 16px;">
+  <a href="{{ url_for('candidate_dashboard') }}" class="btn btn-secondary" style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; font-size:13px; font-weight:600; text-decoration:none;">
+    <i data-lucide="arrow-left" style="width:16px; height:16px;"></i> Back
+  </a>
+</div>
+
+<div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:12px;">
+  <div>
+    <h1 class="page-title" style="margin:0;">Your ATS Report</h1>
+    <p style="color:var(--text-muted); font-size:14px; margin-top:4px;">{{ report.filename }} &middot; analyzed {{ report.created_at }}</p>
+  </div>
+</div>
+
+<div class="candidate-grid" style="display:grid; grid-template-columns: 1fr 2fr; gap:24px;">
+  <!-- Score panel -->
+  <div class="panel" style="text-align:center;">
+    <h3 style="font-size:15px; font-weight:700; margin-bottom:16px;">ATS Score</h3>
+    <div style="position:relative; width:160px; height:160px; margin:0 auto;">
+      <canvas id="atsDonutChart" width="160" height="160"></canvas>
+      <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; pointer-events:none;">
+        <span style="font-size:30px; font-weight:800; display:block; line-height:1;">{{ report.report.ats_score }}</span>
+        <span style="font-size:9px; font-weight:700; color:var(--text-muted); letter-spacing:0.05em;">/ 100</span>
+      </div>
+    </div>
+    <p style="font-size:13px; color:var(--text-muted); margin-top:16px;">{{ report.report.summary }}</p>
+  </div>
+
+  <!-- Checklist panel -->
+  <div class="panel">
+    <h3 style="font-size:15px; font-weight:700; margin-bottom:16px;">Checklist</h3>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      {% for c in report.report.checks %}
+      <div style="display:flex; gap:12px; align-items:flex-start; background:var(--bg-main); padding:12px; border-radius:8px;">
+        <div style="flex-shrink:0; margin-top:2px;">
+          {% if c.status == 'pass' %}
+            <i data-lucide="check-circle-2" style="width:18px; height:18px; color:#10b981;"></i>
+          {% elif c.status == 'warn' %}
+            <i data-lucide="alert-triangle" style="width:18px; height:18px; color:#d97706;"></i>
+          {% else %}
+            <i data-lucide="x-circle" style="width:18px; height:18px; color:#ef4444;"></i>
+          {% endif %}
+        </div>
+        <div>
+          <div style="font-weight:700; font-size:13px;">{{ c.name }}</div>
+          <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">{{ c.message }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="candidate-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:24px; margin-top:24px;">
+  <div class="panel">
+    <h3 style="font-size:15px; font-weight:700; margin-bottom:12px;"><i data-lucide="thumbs-up" style="width:16px; height:16px; color:#10b981;"></i> Strengths</h3>
+    {% if report.report.strengths %}
+      <ul style="padding-left:18px; display:flex; flex-direction:column; gap:8px;">
+        {% for s in report.report.strengths %}
+          <li style="font-size:13px; color:var(--text-primary);">{{ s }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p style="font-size:13px; color:var(--text-muted);">No strong areas identified yet — work through the improvements below.</p>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <h3 style="font-size:15px; font-weight:700; margin-bottom:12px;"><i data-lucide="wrench" style="width:16px; height:16px; color:#d97706;"></i> How to Improve</h3>
+    {% if report.report.improvements %}
+      <ul style="padding-left:18px; display:flex; flex-direction:column; gap:8px;">
+        {% for imp in report.report.improvements %}
+          <li style="font-size:13px; color:var(--text-primary);">{{ imp }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p style="font-size:13px; color:var(--text-muted);">Nothing major to fix — your resume looks ATS-ready.</p>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  const score = {{ report.report.ats_score }};
+  const scoreColor = score >= 80 ? '#10b981' : score >= 55 ? '#f59e0b' : '#ef4444';
+
+  new Chart(document.getElementById('atsDonutChart').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: [score, 100 - score],
+        backgroundColor: [scoreColor, '#e2e8f0'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      cutout: '78%',
+      responsive: false,
+      plugins: { legend: { display: false }, tooltip: { enabled: false } }
+    }
+  });
+</script>
+{% endblock %}

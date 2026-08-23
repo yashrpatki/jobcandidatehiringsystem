@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}All Candidate Master Data{% endblock %}
+
+{% block content %}
+<!-- Back Button -->
+<div style="margin-bottom: 16px;">
+  <button onclick="window.history.back()" class="btn btn-secondary" style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; font-size:13px; font-weight:600; cursor:pointer;">
+    <i data-lucide="arrow-left" style="width:16px; height:16px;"></i> Back
+  </button>
+</div>
+
+<div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+  <div>
+    <h1 class="page-title" style="margin:0;">Master Candidate Database</h1>
+    <p style="color:var(--text-muted); font-size:14px; margin-top:4px;">Role: <strong>{{ run.role }}</strong></p>
+  </div>
+  <a href="{{ url_for('export_all_csv', run_id=run.run_id) }}" class="btn btn-primary">
+    <i data-lucide="download"></i> Export Master CSV
+  </a>
+</div>
+
+<div class="panel" style="padding:0; overflow-x:auto;">
+  <table class="data-table" style="width:100%; border-collapse:collapse; white-space:nowrap;">
+    <thead style="background:#f8fafc; border-bottom:1px solid var(--border-color);">
+      <tr>
+        <th style="padding:12px 16px; font-size:12px;">RANK</th>
+        <th style="padding:12px 16px; font-size:12px;">NAME</th>
+        <th style="padding:12px 16px; font-size:12px;">FIT SCORE</th>
+        <th style="padding:12px 16px; font-size:12px;">EXPERIENCE</th>
+        <th style="padding:12px 16px; font-size:12px;">EMAIL</th>
+        <th style="padding:12px 16px; font-size:12px;">PHONE</th>
+        <th style="padding:12px 16px; font-size:12px;">LOCATION</th>
+        <th style="padding:12px 16px; font-size:12px;">MATCHED SKILLS</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in candidates %}
+      <tr style="border-bottom:1px solid var(--border-color);">
+        <td style="padding:12px 16px; font-weight:700;">#{{ c.rank }}</td>
+        <td style="padding:12px 16px; font-weight:600; color:var(--accent-indigo);">{{ c.name }}</td>
+        <td style="padding:12px 16px;"><strong>{{ c.score }}</strong></td>
+        <td style="padding:12px 16px;">{{ '%.1f'|format(c.experience_years) if c.experience_years is not none else 'N/A' }} Yrs</td>
+        <td style="padding:12px 16px;">{{ c.email or c.parsed_data.Email or 'N/A' }}</td>
+        <td style="padding:12px 16px;">{{ c.phone or c.parsed_data.Phone or 'N/A' }}</td>
+        <td style="padding:12px 16px;">{{ c.location or (c.parsed_data.Location[0] if c.parsed_data.Location else 'N/A') }}</td>
+        <td style="padding:12px 16px;">{{ c.matched_skills | join(', ') if c.matched_skills else 'None' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

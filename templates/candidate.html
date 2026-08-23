@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}{{ candidate.name }} - Candidate Profile{% endblock %}
+
+{% block content %}
+<!-- Back Navigation -->
+<div style="margin-bottom: 16px;">
+  <button onclick="window.history.back()" class="btn btn-secondary" style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; font-size:13px; font-weight:600; cursor:pointer;">
+    <i data-lucide="arrow-left" style="width:16px; height:16px;"></i> Back
+  </button>
+</div>
+
+<!-- Header -->
+<div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+  <div style="display:flex; align-items:center; gap:16px;">
+    <h1 class="page-title" style="margin:0;">{{ candidate.name }}</h1>
+    <span class="status-badge active" style="background:#e0e7ff; color:var(--accent-indigo); padding:4px 12px; border-radius:20px; font-weight:600; font-size:12px;">Top Candidate</span>
+  </div>
+  <div style="display:flex; gap:10px;">
+    <a href="{{ url_for('download_resume', candidate_id=candidate.candidate_id) }}" class="btn btn-secondary">
+      <i data-lucide="file-text"></i> Download PDF
+    </a>
+    <a href="{{ url_for('export_candidate_json', candidate_id=candidate.candidate_id) }}" class="btn btn-primary">
+      <i data-lucide="download"></i> Export JSON
+    </a>
+  </div>
+</div>
+
+<div class="candidate-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:24px;">
+  <!-- Left Column: Info & Skills -->
+  <div class="panel">
+    <h3 style="font-size:16px; margin-bottom:20px;"><i data-lucide="user"></i> Candidate Information</h3>
+    <div class="info-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+      <div class="info-item">
+        <label style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">EMAIL ADDRESS</label>
+        <p style="font-weight:600; font-size:14px; margin-top:4px;">{{ candidate.email or candidate.parsed_data.Email or 'Not Provided' }}</p>
+      </div>
+      <div class="info-item">
+        <label style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">PHONE NUMBER</label>
+        <p style="font-weight:600; font-size:14px; margin-top:4px;">{{ candidate.phone or candidate.parsed_data.Phone or 'Not Provided' }}</p>
+      </div>
+      <div class="info-item">
+        <label style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">YEARS OF EXPERIENCE</label>
+        <p style="font-weight:600; font-size:14px; margin-top:4px;">{{ '%.1f'|format(candidate.experience_years) if candidate.experience_years is not none else 'N/A' }} Years</p>
+      </div>
+      <div class="info-item">
+        <label style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">LOCATION</label>
+        <p style="font-weight:600; font-size:14px; margin-top:4px;">{{ candidate.location or (candidate.parsed_data.Location[0] if candidate.parsed_data.Location else None) or 'Not Provided' }}</p>
+      </div>
+      <div class="info-item">
+        <label style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">PREVIOUS ROLE</label>
+        <p style="font-weight:600; font-size:14px; margin-top:4px;">{{ (candidate.parsed_data['Previous Designation'][0] if candidate.parsed_data.get('Previous Designation') else candidate.previous_role) or 'Not Specified' }}</p>
+      </div>
+      <div class="info-item">
+        <label style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700;">DEGREE</label>
+        <p style="font-weight:600; font-size:14px; margin-top:4px;">{{ candidate.degree or (candidate.parsed_data.Degree | join(', ') if candidate.parsed_data.Degree else None) or 'Not Specified' }}</p>
+      </div>
+    </div>
+
+    <hr style="border:none; border-top:1px solid var(--border-color); margin:20px 0;">
+
+    <h3 style="font-size:14px; margin-bottom:12px;">Matched Skills</h3>
+    <div style="display:flex; flex-wrap:wrap; gap:8px;">
+      {% if candidate.matched_skills %}
+        {% for s in candidate.matched_skills %}
+          <span style="background:#ecfdf5; color:#10b981; padding:4px 10px; border-radius:6px; font-weight:600; font-size:12px;">✓ {{ s }}</span>
+        {% endfor %}
+      {% else %}
+        <span style="font-size:13px; color:var(--text-muted);">None matched</span>
+      {% endif %}
+    </div>
+
+    <h3 style="font-size:14px; margin-top:20px; margin-bottom:12px;">Skill Gaps</h3>
+    <div style="display:flex; flex-wrap:wrap; gap:8px;">
+      {% if candidate.missing_skills %}
+        {% for s in candidate.missing_skills %}
+          <span style="background:#fef2f2; color:#ef4444; padding:4px 10px; border-radius:6px; font-weight:600; font-size:12px;">✕ {{ s }}</span>
+        {% endfor %}
+      {% else %}
+        <span style="font-size:13px; color:var(--text-muted);">No missing skills</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right Column: Analytics & Score Breakdown -->
+  <div class="panel">
+    <h3 style="font-size:16px; margin-bottom:16px;">Score Performance</h3>
+    <div style="display:flex; align-items:center; justify-content:space-around; min-height:180px;">
+      
+      <!-- Donut Chart -->
+      <div style="position:relative; width:150px; height:150px; display:flex; align-items:center; justify-content:center;">
+        <canvas id="fitDonutChart" width="150" height="150"></canvas>
+        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; pointer-events:none;">
+          <span style="font-size:24px; font-weight:800; display:block; line-height:1;">{{ candidate.score }}</span>
+          <span style="font-size:9px; font-weight:700; color:var(--text-muted); letter-spacing:0.05em;">FIT SCORE</span>
+        </div>
+      </div>
+
+      <!-- Radar Chart -->
+      <div style="width:200px; height:180px;">
+        <canvas id="candidateRadar"></canvas>
+      </div>
+    </div>
+
+    <hr style="border:none; border-top:1px solid var(--border-color); margin:20px 0;">
+
+    <h3 style="font-size:16px; margin-bottom:12px;">Score Breakdown Explanation</h3>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div style="background:var(--bg-main); padding:12px; border-radius:8px;">
+        <div style="display:flex; justify-content:space-between; font-weight:600; font-size:13px;"><span>Skills Alignment</span><strong>{{ candidate.score_breakdown.skills }}%</strong></div>
+        <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">{{ candidate.why_score.skills }}</p>
+      </div>
+      <div style="background:var(--bg-main); padding:12px; border-radius:8px;">
+        <div style="display:flex; justify-content:space-between; font-weight:600; font-size:13px;"><span>Experience Relevance</span><strong>{{ candidate.score_breakdown.experience }}%</strong></div>
+        <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">{{ candidate.why_score.experience }}</p>
+      </div>
+      <div style="background:var(--bg-main); padding:12px; border-radius:8px;">
+        <div style="display:flex; justify-content:space-between; font-weight:600; font-size:13px;"><span>Degree Match</span><strong>{{ candidate.score_breakdown.degree }}%</strong></div>
+        <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">{{ candidate.why_score.degree }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const scoreData = {{ candidate.score_breakdown | tojson }};
+  const currentScore = {{ candidate.score }};
+
+  new Chart(document.getElementById('fitDonutChart').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: [currentScore, 100 - currentScore],
+        backgroundColor: ['#6366f1', '#e2e8f0'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      cutout: '80%',
+      responsive: false,
+      plugins: { legend: { display: false }, tooltip: { enabled: false } }
+    }
+  });
+
+  new Chart(document.getElementById('candidateRadar').getContext('2d'), {
+    type: 'radar',
+    data: {
+      labels: ['Skills', 'Experience', 'Degree', 'Role Fit'],
+      datasets: [{
+        data: [scoreData.skills, scoreData.experience, scoreData.degree, scoreData.role],
+        backgroundColor: 'rgba(99, 102, 241, 0.2)',
+        borderColor: '#6366f1',
+        pointBackgroundColor: '#6366f1'
+      }]
+    },
+    options: {
+      scales: { r: { min: 0, max: 100, ticks: { display: false } } },
+      plugins: { legend: { display: false } }
+    }
+  });
+</script>
+{% endblock %}
