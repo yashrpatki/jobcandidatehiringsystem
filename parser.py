@@ -20,7 +20,8 @@ models = []
 for name in MODEL_NAMES:
     try:
         models.append(spacy.load(name))
-    except:
+        break  # stop after the first model that loads successfully
+    except Exception:
         pass
 
 if not models:
